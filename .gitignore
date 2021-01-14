@@ -1,6 +1,6 @@
 /node_module
-.npm-debug.ls
-.dbConfig
-.credentials
+npm-debug.ls
+dbConfig.php
+credentials.php
 .env
 .DS_Store
