@@ -3,16 +3,18 @@ header('Access-Control-Allow-Origin: *');
 require_once __DIR__ . '/../model/dbConfig.php';
 require_once __DIR__ . '/../model/SmartToken.php';
 
-class User {
+class User
+{
   private $mail;
   private $userID;
   private $rowID;
   private $token;
   private $smartCredentials;
 
-  
+
   //Setters
-  public function setMail($mail) {
+  public function setMail($mail)
+  {
     if (filter_var($mail, FILTER_VALIDATE_EMAIL)) {
       $this->mail = $mail;
     } else {
@@ -20,8 +22,9 @@ class User {
     }
   }
 
-  public function setSmartCredentials($client, $secret) {
-    if(isset($client) && isset($secret)) {
+  public function setSmartCredentials($client, $secret)
+  {
+    if (isset($client) && isset($secret)) {
       $smartCredentials = ['clientKey' => $client, 'secretKey' => $secret];
       $this->smartCredentials = $smartCredentials;
     } else {
@@ -29,15 +32,17 @@ class User {
     }
   }
 
-  public function setRowId($rowID) {
+  public function setRowId($rowID)
+  {
     if (is_numeric($rowID)) {
       $this->rowID = $rowID;
     } else {
       throw new Exception('Row ID is not numeric');
     }
   }
-  
-  public function setUserID($userID) {
+
+  public function setUserID($userID)
+  {
     if (is_numeric($userID)) {
       $this->userID = $userID;
     } else {
@@ -45,7 +50,8 @@ class User {
     }
   }
 
-  public function setToken($token) {
+  public function setToken($token)
+  {
     if (preg_match('/^[a-z0-9 .\-]+$/i', $token)) {
       $this->token = $token;
     } else {
@@ -54,43 +60,47 @@ class User {
   }
 
 
-//private  
-  private function createToken() {
-      $header = md5(time());
-      $middle = rand(10000, 99999);  
-      $id = rand(10000000, 99999999);
+  //private  
+  private function createToken()
+  {
+    $header = md5(time());
+    $middle = rand(10000, 99999);
+    $id = rand(10000000, 99999999);
 
-      return $header . '.' . $middle . '.' . $id; 
+    return $header . '.' . $middle . '.' . $id;
   }
-  
-  
-  private function getToken() {
+
+
+  private function getToken()
+  {
     $userID = $this->userID;
-    
+
     $sql = "SELECT token FROM offcores_user WHERE referenceNumber = :userID";
     $inst = DB::connect()->prepare($sql);
     $inst->execute(array(":userID" => $userID));
     $data = $inst->fetch(PDO::FETCH_ASSOC);
     $inst = null;
-    
+
     return $data['token'];
   }
-  
-  private function getRowId() {
+
+  private function getRowId()
+  {
     $userID = $this->userID;
-    
+
     $sql = "SELECT ID FROM offcores_user WHERE referenceNumber = :userID";
     $inst = DB::connect()->prepare($sql);
     $inst->execute(array(":userID" => $userID));
     $data = $inst->fetch(PDO::FETCH_ASSOC);
     $inst = null;
-    
+
     return $data['ID'];
   }
-  
 
-//Public
-  public function validateToken() {
+
+  //Public
+  public function validateToken()
+  {
     $token = $this->token;
     $rowID = $this->rowID;
 
@@ -101,22 +111,24 @@ class User {
     $inst = null;
 
     if ($token === $data['token']) {
-      return ['status' => 'success']; 
+      return ['status' => 'success'];
     }
 
     return ['status' => 'invalid'];
   }
 
-  public function loginUser($groupID = 1) {
+  public function loginUser($groupID = 1)
+  {
     $userToken = $this->getToken();
     $userID = $this->getRowId();
     $smrt = new SmartToken($this->smartCredentials);
     $smartToken = $smrt->smartToken($groupID);
-    
-    return ['status' => 'success', 'userID' => $userID, 'loginToken' => $userToken, 'smartToken' => $smartToken ];
+
+    return ['status' => 'success', 'userID' => $userID, 'loginToken' => $userToken, 'smartToken' => $smartToken];
   }
 
-  public function setUser() {
+  public function setUser()
+  {
     $userID = $this->userID;
     $mail = $this->mail;
 
@@ -125,18 +137,17 @@ class User {
     $inst->execute(array(":userID" => $userID));
     $data = $inst->fetch(PDO::FETCH_ASSOC);
     $inst = null;
-    
-    if(empty($data) === true ) {
+
+    if (empty($data) === true) {
       $token = $this->createToken();
       $sql = "INSERT INTO offcores_user (Email, referenceNumber, token) VALUES (:Email, :userID, :token)";
       $inst = DB::connect()->prepare($sql);
-      $response = $inst->execute(array(":Email" => $mail,":userID" => $userID, ':token' => $token));
+      $response = $inst->execute(array(":Email" => $mail, ":userID" => $userID, ':token' => $token));
       $inst = null;
-      
-      if($response === false) {
+
+      if ($response === false) {
         throw new Exception('Updating new user failed');
       }
-
     } else if (empty($data) === false) {
       $token = $this->createToken();
       $sql = "UPDATE offcores_user SET token = :token WHERE referenceNumber = :userID";
@@ -144,7 +155,7 @@ class User {
       $response = $inst->execute(array(":userID" => $userID, ':token' => $token));
       $inst = null;
 
-      if($response === false) {
+      if ($response === false) {
         throw new Exception('Token not updated');
       }
     }

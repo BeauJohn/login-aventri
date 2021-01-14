@@ -1,13 +1,6 @@
 <?php
 header('Access-Control-Allow-Origin: *');
-
-//Credentials
-$dbConnect = new SM_DBConnect($projectname);
-$eventID = $dbConnect->getToken('[::TKN::EVENTID::]');
-$masterKey = '';
-$accountID = '';
-
-
+require_once __DIR__ . '/../credentials.php';
 
 $body = array('accountid' => $accountID, 'key' => $masterKey);
 $ch = curl_init();
