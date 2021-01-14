@@ -1,13 +1,22 @@
 <?php
+header('Access-Control-Allow-Origin: *');
 
-class SmartToken {
 
-    private function accesToken() {
-        //these credentials can be found inside your Project  > Code > Smart Content
-        $clientId = 'smrt16153xfa820ef11c';
-        $clientSecret = 'cd00692c3bfe59267d5ecfac5310286c';
-        
-    
+class SmartToken
+{
+
+    function __construct($credentials)
+    {
+        $this->client = $credentials['clientKey'];
+        $this->secret = $credentials['secretKey'];
+    }
+
+    private function accesToken()
+    {
+        $clientId = $this->client;
+        $clientSecret = $this->secret;
+
+
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, 'https://api.sitemn.gr/token/');
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -18,7 +27,7 @@ class SmartToken {
             'scope' => 'smart',
             'grant_type' => 'client_credentials',
         ]);
-        
+
         $response = curl_exec($ch);
         $data = json_decode($response, true);
         $accessToken = $data['access_token'];
@@ -26,9 +35,9 @@ class SmartToken {
         return $accessToken;
     }
 
-    public function smartToken() {
+    public function smartToken($groupID = 1)
+    { //this groupID can be found when editing a smart group
         $accessToken = $this->accesToken();
-        $groupID = '1'; //this groupID can be found when editing a smart group
 
         $ch = curl_init();
         $endpoint = 'https://api.sitemn.gr/smarttoken/?access_token=' . $accessToken;
@@ -51,5 +60,3 @@ class SmartToken {
         }
     }
 }
-
-// /swfiles/lib/protected.php*/

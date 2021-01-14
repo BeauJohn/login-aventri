@@ -1,18 +1,18 @@
-<?php 
+<?php
+header('Access-Control-Allow-Origin: *');
 require_once __DIR__ . '/../model/User.php';
 
-$rowId = $_POST['userID'];
+$rowID = $_POST['userID'];
 $token = $_POST['token'];
 
-try  {
+try {
     $user = new User();
-    $user->setRowId($rowId);
+    $user->setRowId($rowID);
     $user->setToken($token);
     $valid = $user->validateToken();
 
     echo json_encode($valid);
-
 } catch (Exception $e) {
     $errorMsg = $e->getMessage();
     echo json_encode('Error: ' . $errorMsg);
-}    
+}

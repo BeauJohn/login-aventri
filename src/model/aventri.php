@@ -1,71 +1,85 @@
 <?php
-//Credentials
-$masterKey = 'cf3bc560a01f8fd9e2b28b21f182abf419809166';
-$eventID = '540755';
-$accountID = '4648';
+header('Access-Control-Allow-Origin: *');
 
-$body = array('accountid' => $accountID, 'key' => $masterKey);
-$ch = curl_init();
-curl_setopt($ch, CURLOPT_URL,"https://api-na.eventscloud.com/api/v2/global/authorize.json");
-curl_setopt($ch, CURLOPT_POST, 1);
-curl_setopt($ch, CURLOPT_POSTFIELDS,  http_build_query($body));
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-$response = curl_exec($ch);
-$data = json_decode($response, true);
-curl_close($ch);
+class Aventri
+{
 
-$accesstoken = $data['accesstoken'];
+    function __construct($masterKey, $eventID, $accountID, $mail, $userID)
+    {
+        $this->masterkey = $masterKey;
+        $this->eventID = $eventID;
+        $this->accountID = $accountID;
+        $this->mail = $mail;
+        $this->userID = $userID;
 
+        $body = ['accountid' => $accountID, 'key' => $masterKey];
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, "https://api-na.eventscloud.com/api/v2/global/authorize.json");
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS,  http_build_query($body));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        $response = curl_exec($ch);
+        $data = json_decode($response, true);
+        curl_close($ch);
 
-//Helper Functions
-function getResponseMail($dataFields) {
-    foreach ($dataFields as $key => $value) {
-        if ($value['fieldname'] === 'email') {
-            return $value['choicekey'];
+        $this->accesstoken = $data['accesstoken'];
+    }
+
+    private function getResponseMail($dataFields)
+    {
+        foreach ($dataFields as $key => $value) {
+            if ($value['fieldname'] === 'email') {
+                return $value['choicekey'];
+            }
         }
     }
-}
 
-//Functions
-function validateUser($mail, $userID) {
-    global $eventID, $accesstoken;
-    
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL,"https://api-na.eventscloud.com/api/v2/ereg/getAttendee.json?accesstoken=$accesstoken&eventid=$eventID&attendeeid=$userID");
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    $response = curl_exec($ch);
-    $data = json_decode($response, true);
-    curl_close($ch);
-    
-    $dataFields = $data['responses'];
-    $responseMail = getResponseMail($dataFields);
+    public function validateUser()
+    {
+        $userID = $this->userID;
+        $eventID = $this->eventID;
+        $accesstoken = $this->accesstoken;
 
-    if ($mail === $responseMail) {
-        return true;
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, "https://api-na.eventscloud.com/api/v2/ereg/getAttendee.json?accesstoken=$accesstoken&eventid=$eventID&attendeeid=$userID");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        $response = curl_exec($ch);
+        $data = json_decode($response, true);
+        curl_close($ch);
+
+        $dataFields = $data['responses'];
+        $responseMail = $this->getResponseMail($dataFields);
+
+        if ($responseMail === $this->mail) {
+            $this->data = $data;
+            return true;
+        }
+
+        return false;
     }
 
-    return false;
-}
 
+    public function updateStatus()
+    {
+        $accesstoken = $this->accesstoken;
+        $userID = $this->userID;
+        $eventID = $this->eventID;
+        $status = 'Attended';
 
-function updateStatus($userID) {
-    global $eventID, $accesstoken;
+        $body = array('accesstoken' => $accesstoken, 'attendeeid' => $userID, 'eventid' => $eventID, 'status' => $status);
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, "https://api-na.eventscloud.com/api/v2/ereg/updateAttendeeStatus.json");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
+        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($body));
+        $response = curl_exec($ch);
+        $data = json_decode($response, true);
+        curl_close($ch);
 
-    $status = 'Confirmed';
-    $body = Array('accesstoken' => $accesstoken, 'attendeeid' => $userID, 'eventid' => $eventID, 'status' => $status);
+        if ($data['attendeeid'] === $this->userID) {
+            return true;
+        }
 
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL,"https://api-na.eventscloud.com/api/v2/ereg/updateAttendeeStatus.json");
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
-    curl_setopt( $ch, CURLOPT_POSTFIELDS, http_build_query($body));
-    $response = curl_exec($ch);
-    $data = json_decode($response, true);
-    curl_close($ch);
-    
-    if ($data['attendeeid'] === $userID) {
-        return true;
+        return false;
     }
-
-    return false;
 }
